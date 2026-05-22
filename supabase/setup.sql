@@ -181,7 +181,7 @@ BEGIN
         INSERT INTO product_stocks (product_id, lot, quantity)
         SELECT id, stk.lot, stk.quantity
         FROM products
-        WHERE code = stk.product_code;
+        WHERE = true AND code = stk.product_code;
     END LOOP;
 END;
 $$ LANGUAGE plpgsql;

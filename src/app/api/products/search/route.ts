@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { mockDB, isMockMode } from '@/lib/mockDb';
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +11,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ products: [] });
     }
 
-    // Buscar por código o descripción usando ILIKE (coincidencia parcial insensible a mayúsculas/minúsculas)
+    // --- MOCK MODE ---
+    if (isMockMode()) {
+      const lowerQuery = query.toLowerCase();
+      const filtered = mockDB.products
+        .filter(
+          (p) =>
+            p.code.toLowerCase().includes(lowerQuery) ||
+            p.description.toLowerCase().includes(lowerQuery)
+        )
+        .slice(0, 15)
+        .map((p) => ({
+          id: p.id,
+          code: p.code,
+          description: p.description,
+          presentation: p.presentation,
+          manufacturer: p.manufacturer,
+          unit_price: p.unit_price,
+          iva: p.iva,
+        }));
+
+      return NextResponse.json({ products: filtered });
+    }
+
+    // --- PRODUCCIÓN: Supabase ---
     const { data, error } = await supabaseAdmin
       .from('products')
       .select('id, code, description, presentation, manufacturer, unit_price, iva')

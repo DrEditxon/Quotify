@@ -12,6 +12,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const { mockDB, isMockMode } = require('@/lib/mockDb');
+
+    if (isMockMode()) {
+      console.log('--- MOCK MODE ACTIVE: Sincronizando Inventario en Memoria ---');
+      mockDB.products = products.map((p: any) => ({
+        id: p.id || crypto.randomUUID(),
+        code: String(p.code),
+        description: String(p.description),
+        presentation: String(p.presentation || ''),
+        manufacturer: String(p.manufacturer || ''),
+        iva: Number(p.iva || 0),
+        unit_price: Number(p.unit_price || 0)
+      }));
+
+      mockDB.stocks = stocks.map((s: any) => ({
+        product_code: String(s.product_code),
+        lot: String(s.lot),
+        quantity: Number(s.quantity || 0)
+      }));
+
+      return NextResponse.json({ success: true, message: 'Inventario sincronizado de forma atómica en memoria (MODO DEMO).' });
+    }
+
     const { error } = await supabaseAdmin.rpc('sync_inventory', {
       p_products: products,
       p_stocks: stocks,

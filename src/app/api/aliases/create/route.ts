@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
+import { mockDB, isMockMode } from '@/lib/mockDb';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,6 +13,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // --- MOCK MODE ---
+    if (isMockMode()) {
+      console.log(`--- MOCK MODE: Guardando alias "${clientArticleName}" -> ${productId} ---`);
+      const existingIdx = mockDB.aliases.findIndex(
+        (a) => a.client_article_name.toLowerCase() === clientArticleName.trim().toLowerCase()
+      );
+
+      if (existingIdx >= 0) {
+        mockDB.aliases[existingIdx].product_id = productId;
+      } else {
+        mockDB.aliases.push({
+          client_article_name: clientArticleName.trim(),
+          product_id: productId,
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        alias: { client_article_name: clientArticleName.trim(), product_id: productId },
+      });
+    }
+
+    // --- PRODUCCIÓN: Supabase ---
     const { data, error } = await supabaseAdmin
       .from('client_aliases')
       .upsert(
